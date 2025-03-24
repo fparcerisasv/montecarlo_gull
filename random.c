@@ -55,7 +55,7 @@ unsigned long int ulong_limited_ran (const unsigned long int lim) { unsigned lon
                       case 2: return cointoss(); break;
                       case 3: return rantrit();  break;
                       case 4: return ranfour();  break;
-                     default: r = (xorshift64() % lim); return r; break; }*/ // unnecessary steps
+                     default: r = (xorshift64() % lim); return r; break; }*/ // unnecessary steps, calling each function will cal xorshift64() anyway
                      if (lim == 0) return xorshift64();  // No limit case
                         return xorshift64() % lim;
 }

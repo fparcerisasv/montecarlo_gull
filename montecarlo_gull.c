@@ -18,10 +18,6 @@ typedef struct {
     double delta;
 } Parameters;
 
-// Function to generate a random number in a given range
-double rand_range(double min, double max) {
-    return min + (max - min) * ((double)rand() / RAND_MAX);
-}
 // Function to compute the dispersal function phi(x)
 double dispersal_function(double x, double mu, double sigma, double delta) {
     double E_x = sigma * (x - delta) / (1000 + sigma * fabs(x - delta));
@@ -29,6 +25,7 @@ double dispersal_function(double x, double mu, double sigma, double delta) {
     return (x <= delta) ? (1 - E_dir) / (1 - E_dir) : (1 - E_x) / (1 - E_dir);
 }
 
+// Function to compute the derivative of x with respect to t
 void dxdt(double t, double x, double *dx, void *params) {
     double *p = (double *)params;
     double phi = p[0];
@@ -44,6 +41,10 @@ void dxdt(double t, double x, double *dx, void *params) {
 
 
 // Function to evaluate F(x0, phi, lambda, mu, sigma, delta)
+/* Broad calculation without using Runge-Kutta or other differential equation numerical solvers, just a simple loop.
+ * It would take a lot of time to compute all the values necessary and there is no much gain given this is a montecarlo implementation.
+
+*/
 double evaluate_F(Parameters p, double observed[], int years) {
     double x = p.x0;
     double error = 0.0;
@@ -63,18 +64,22 @@ double evaluate_F(Parameters p, double observed[], int years) {
 int main() {
     randomize();
 
-    double observed[] = {15329, 14177, 13031, 9762, 11271, 8688, 7571, 6983, 4778, 2067, 1586, 793};
+    double observed[] = {15329, 14177, 13031, 9762, 11271, 8688, 7571, 6983, 4778, 2067, 1586, 793};  // Observed population values according to the assignment
     int years = sizeof(observed) / sizeof(observed[0]);
     
     Parameters best_params;
     double best_F = INFINITY;
-    double x0_step = 5206.0 / (1 << 19) - 1;
+    double x0_step = 5206.0 / (1 << 19) - 1;// Suggested steps in the assignement
     double phi_step = (ALPHA - 0.12) / ((1ULL << 32) - 1);
     double lambda_step = 2700.0 / ((1 << 19) - 1);
     double mu_step = 10.0 / ((1 << 24) - 1);
     double sigma_step = 50.0 / ((1 << 19) - 1);
     long double delta_step = 20000.0 / ((1 << 16) - 1);
+
     // Monte Carlo Simulation
+    /*Main loop:
+    Just randomly select cells and evalute the error function. If the error is lower than the best found, update the best found.
+    */
     for (int i = 0; i < NUM_TRIES; i++) {
         Parameters p = {
             discrete_random(19,12726,x0_step),  // x0
