@@ -1,10 +1,8 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include "random.c"
-#include "RKF78-2.2.c/RKF78.h"
-#define NUM_TRIES 1000000  // Number of Monte Carlo iterations
+#define NUM_TRIES 10000000  // Number of Monte Carlo iterations
 #define K 18822.79734      // Carrying capacity
 #define ALPHA 0.3489494104672237     // Population growth rate without dispersal
 #define BETA 2.43826356697e-5 // Intrinsic growth rate
@@ -24,7 +22,7 @@ typedef struct {
 double rand_range(double min, double max) {
     return min + (max - min) * ((double)rand() / RAND_MAX);
 }
-// Function to compute the dispersal function Ψ(x)
+// Function to compute the dispersal function phi(x)
 double dispersal_function(double x, double mu, double sigma, double delta) {
     double E_x = sigma * (x - delta) / (1000 + sigma * fabs(x - delta));
     double E_dir = ((mu / (1000 + sigma * delta)) * (1 - x / delta) + (x / delta)) * E_x;
@@ -49,18 +47,13 @@ void dxdt(double t, double x, double *dx, void *params) {
 double evaluate_F(Parameters p, double observed[], int years) {
     double x = p.x0;
     double error = 0.0;
-    double t = 0.0, tEnd = years;
-    double h = 0.1, hnext;
-    double tol = 1e-6;
-    
-    double params[] = {p.phi, p.lambda, p.mu, p.sigma, p.delta};
 
-    while (t < tEnd) {
-        RKF78(&t, &x, &h, &hnext, tol, tEnd, x, params, dxdt);
-        if (x < 0) x = 0;
-        error += pow(x - observed[(int)t], 2);
+    for (int t = 0; t < years; t++) {
+        double dispersal = p.lambda * dispersal_function(x, p.mu, p.sigma, p.delta);
+        x = (p.phi * x - BETA * x * x - dispersal);
+        if (x < 0) x = 0; // Population cannot be negative
+        error += pow(x - observed[t], 2);
     }
-    
     return sqrt(error);
 }
 
@@ -110,4 +103,4 @@ int main() {
     printf("Best F value = %lf\n", best_F);
 
     return 0;
-}
+} 
